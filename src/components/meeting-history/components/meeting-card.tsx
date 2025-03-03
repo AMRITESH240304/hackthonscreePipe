@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Wand2, FileText, ChevronDown, Trash2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -15,6 +15,7 @@ import type { MeetingPrep } from "../types"
 import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Squares } from "@/components/ui/squares-background"
 
 interface MeetingCardProps {
   meeting: LiveMeetingData
@@ -45,6 +46,13 @@ export function MeetingCard({ meeting, onUpdate, settings, onDelete, isLive, onL
   const { toast } = useToast()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [dontAskAgain, setDontAskAgain] = useState(false)
+  const [mounted, setMounted] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Add useEffect to handle mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const formatTime = (dateStr: string): string => {
     return new Date(dateStr).toLocaleTimeString([], { 
@@ -196,27 +204,42 @@ export function MeetingCard({ meeting, onUpdate, settings, onDelete, isLive, onL
 
   return (
     <Card 
-      className="w-full mb-1 border-0 -mx-2 cursor-pointer hover:bg-accent/50"
+      ref={cardRef}
+      className="w-full mb-1 border-0 -mx-2 cursor-pointer hover:bg-accent/50 relative overflow-hidden bg-transparent text-white"
       onClick={handleCardClick}
     >
-      <CardContent className="p-3 relative">
+      {/* Add squares background */}
+      {mounted && (
+        <div className="absolute inset-0 z-0">
+          <Squares 
+            direction="diagonal"
+            speed={0.3}
+            squareSize={30}
+            borderColor="#333" 
+            hoverFillColor="#222"
+            className="opacity-10"
+          />
+        </div>
+      )}
+      
+      <CardContent className="p-3 relative z-10">
         {!isLive && onLoadArchived && (
           <div className="absolute right-2 top-2">
             <HoverCard openDelay={0} closeDelay={0}>
               <HoverCardTrigger>
-                <div className="text-xs text-muted-foreground bg-accent/50 px-1.5 py-0.5 rounded">
+                <div className="text-xs text-white bg-accent/50 px-1.5 py-0.5 rounded">
                   archived
                 </div>
               </HoverCardTrigger>
               <HoverCardContent className="w-auto p-2">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-white">
                   click to load and edit this meeting
                 </span>
               </HoverCardContent>
             </HoverCard>
           </div>
         )}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-muted-foreground/10 origin-bottom transition-transform duration-500"
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white/10 origin-bottom transition-transform duration-500"
           style={{ 
             transform: `scaleY(${0.5 + Math.min(durationMinutes / 60, 1) * 0.5})`,
             opacity: 0.2
@@ -224,10 +247,10 @@ export function MeetingCard({ meeting, onUpdate, settings, onDelete, isLive, onL
         />
         <div className="flex gap-4">
           <div className="flex-none w-[30%]">
-            <h3 className="text-base font-bold">
+            <h3 className="text-base font-bold text-white">
               {meeting.title || "untitled meeting"}
             </h3>
-            <div className="text-sm text-muted-foreground flex items-center justify-between">
+            <div className="text-sm text-white/70 flex items-center justify-between">
               <div className="flex items-center">
                 {formatTime(meeting.startTime)} • {formatDuration(meeting.startTime, meeting.endTime)}
                 {wordCount > 0 && (
@@ -326,7 +349,7 @@ export function MeetingCard({ meeting, onUpdate, settings, onDelete, isLive, onL
           </div>
           <div className="flex-1">
             {meeting.analysis?.summary && (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-white/70">
                 {meeting.analysis.summary}
               </div>
             )}

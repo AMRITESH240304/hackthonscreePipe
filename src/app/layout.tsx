@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { Analytics } from "@vercel/analytics/react"
 import { ChatButton } from "@/components/chat-button"
 import { RootProvider } from "@/components/providers/root-provider"
+import { Squares } from "@/components/ui/squares-background"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,10 +31,20 @@ export default function RootLayout({
     <html lang="en">
       <body 
         suppressHydrationWarning={true}
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen relative`}
       >
         <RootProvider>
-          <main className="h-full p-4 overflow-hidden">
+          {/* Squares background */}
+          <div className="absolute inset-0 z-0">
+            <Squares 
+              direction="diagonal"
+              speed={0.5}
+              squareSize={40}
+              borderColor="#333" 
+              hoverFillColor="#222"
+            />
+          </div>
+          <main className="h-full p-4 overflow-hidden relative z-10">
             {children}
           </main>
           <Toaster />
