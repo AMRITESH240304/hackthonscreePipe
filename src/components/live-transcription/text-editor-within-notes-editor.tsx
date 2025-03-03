@@ -7,6 +7,8 @@ import { ChunkOverlay } from './floating-container-buttons'
 import { useSettings } from "@/lib/hooks/use-settings"
 import { useMeetingContext } from './hooks/storage-for-live-meeting'
 import { useTextEditorAutoScroll } from './hooks/text-editor-auto-scroll'
+import Spreadsheet from 'react-spreadsheet'
+import MeetingNotesSpreadsheet from '../ui/spreadSheet'
 
 interface TextEditorProps {
   notes: Note[]
@@ -27,6 +29,7 @@ export function TextEditor({
 }: TextEditorProps) {
   const [hoverX, setHoverX] = useState<number | null>(null)
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null)
+  const [showSpreadsheet, setShowSpreadsheet] = useState<boolean>(false)
 
   const { settings } = useSettings()
   const { title, segments } = useMeetingContext()
@@ -43,14 +46,32 @@ export function TextEditor({
     scrollToBottom 
   } = useTextEditorAutoScroll()
   
+  // Prepare context for the spreadsheet from segments
+  const transcriptionContext = segments
+    ? segments
+        .map(s => {
+          // First, let's determine what time property is available on the segment
+          let timeStr = 'Unknown time';
+          
+          // Try to find a time-related property in the segment
+          if ('startTime' in s) {
+            timeStr = new Date((s as any).startTime).toLocaleTimeString();
+          } else if ('start' in s) {
+            timeStr = new Date((s as any).start).toLocaleTimeString();
+          } else if ('timestamp' in s) {
+            timeStr = new Date((s as any).timestamp).toLocaleTimeString();
+          } else if ('time' in s) {
+            timeStr = new Date((s as any).time).toLocaleTimeString();
+          }
+          
+          // Return formatted string with time and text
+          return `[${timeStr}] ${s.speaker || 'Unknown'}: ${"jfkdj"}`;
+        })
+        .join('\n')
+    : '';
+
   // Update localText whenever notes change
   useEffect(() => {
-    // console.log('text-editor: notes updated', { 
-    //   notesCount: notes.length,
-    //   lastNote: notes[notes.length - 1]?.text?.slice(0, 50),
-    //   isInitialized: initializedRef.current
-    // })
-
     const text = notes
       .map(note => {
         const text = note.text || ''
@@ -155,52 +176,72 @@ export function TextEditor({
     editedAt: undefined
   })
 
+  const toggleSpreadsheetView = () => {
+    setShowSpreadsheet(!showSpreadsheet);
+  };
 
   return (
     <div 
       ref={scrollRef}
       className="flex flex-col h-full"
     >
-      <textarea
-        ref={textareaRef}
-        onScroll={autoScrollOnScroll}
-        value={localText}
-        onChange={(e) => {
-          const newValue = e.target.value
-          // console.log('textarea onChange:', { newValue: e.target.value });
-          setLocalText(newValue)
-          
-          if (textDebounceRef.current) {
-            clearTimeout(textDebounceRef.current)
-          }
-          
-          textDebounceRef.current = setTimeout(() => {
-            const newNotes = newValue.split('\n')
-                .filter(text => text.trim())
-                .map(createNote)
-            console.log('creating new notes:', {
-                oldLength: notes.length,
-                newLength: newNotes.length,
-                sample: newNotes[0]?.text?.slice(0, 50)
-            })
-            setNotes(newNotes)
-          }, 500)
-        }}
-        onBlur={() => {
-          const currentNotes = notes.map(n => n.text).join('\n')
-          if (localText.trim() !== currentNotes.trim()) {
-            console.log('committing text on blur')
-            const newNotes = localText.split('\n')
-                .filter(text => text.trim())
-                .map(createNote)
-            setNotes(newNotes)
-          }
-        }}
-        onKeyDown={handleKeyDown}
-        className="flex-1 w-full p-3 resize-none focus:outline-none bg-transparent overflow-y-auto"
-        placeholder="type your notes..."
-        autoFocus={isEditing}
-      />
+      <div className="flex justify-end mb-2">
+        <button 
+          onClick={toggleSpreadsheetView}
+          className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          {showSpreadsheet ? 'Show Editor' : 'Show Spreadsheet'}
+        </button>
+      </div>
+
+      {showSpreadsheet ? (
+        <MeetingNotesSpreadsheet 
+          notes={notes}
+          context={transcriptionContext}
+          title={title}
+          settings={settings}
+        />
+      ) : (
+        <textarea
+          ref={textareaRef}
+          onScroll={autoScrollOnScroll}
+          value={localText}
+          onChange={(e) => {
+            const newValue = e.target.value
+            setLocalText(newValue)
+            
+            if (textDebounceRef.current) {
+              clearTimeout(textDebounceRef.current)
+            }
+            
+            textDebounceRef.current = setTimeout(() => {
+              const newNotes = newValue.split('\n')
+                  .filter(text => text.trim())
+                  .map(createNote)
+              console.log('creating new notes:', {
+                  oldLength: notes.length,
+                  newLength: newNotes.length,
+                  sample: newNotes[0]?.text?.slice(0, 50)
+                })
+                setNotes(newNotes)
+              }, 500)
+            }}
+          onBlur={() => {
+            const currentNotes = notes.map(n => n.text).join('\n')
+            if (localText.trim() !== currentNotes.trim()) {
+              console.log('committing text on blur')
+              const newNotes = localText.split('\n')
+                  .filter(text => text.trim())
+                  .map(createNote)
+              setNotes(newNotes)
+            }
+          }}
+          onKeyDown={handleKeyDown}
+          className="flex-1 w-full p-3 resize-none focus:outline-none bg-transparent overflow-y-auto"
+          placeholder="type your notes..."
+          autoFocus={isEditing}
+        />
+      )}
     </div>
   )
-} 
+}

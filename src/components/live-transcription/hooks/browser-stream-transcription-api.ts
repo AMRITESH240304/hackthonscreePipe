@@ -20,7 +20,7 @@ export function useBrowserTranscriptionStream(
 
     intentionalCloseRef.current = false
     // Use env var with fallback to hardcoded key, move to back
-    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || '646b887eceffbf128315d2f419e48a2ff174ab66'
+    const apiKey = process.env.NEXT_PUBLIC_DEEPGRAM_API_KEY || 'a4878212d6e16cefc255a0683ffe47aa8d0c6f37'
     // console.log('using deepgram api key:', apiKey ? 'found' : 'not found')
 
     try {
